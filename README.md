@@ -2,7 +2,7 @@
 
 **Efficient Lifelong Memory for LLM Agents** - TypeScript Implementation
 
-[![npm version](https://badge.fury.io/js/simplemem.svg)](https://www.npmjs.com/package/simplemem)
+[![npm version](https://badge.fury.io/js/@sheriax%2Fsimplemem.svg)](https://www.npmjs.com/package/@sheriax/simplemem)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A TypeScript implementation of the [SimpleMem paper](https://arxiv.org/abs/2601.02553), achieving:
@@ -15,19 +15,19 @@ A TypeScript implementation of the [SimpleMem paper](https://arxiv.org/abs/2601.
 
 ```bash
 # Bun (recommended)
-bun add @ys/simplemem
+bun add @sheriax/simplemem
 
 # npm
-npm install @ys/simplemem
+npm install @sheriax/simplemem
 
 # pnpm
-pnpm add @ys/simplemem
+pnpm add @sheriax/simplemem
 ```
 
 ## Quick Start
 
 ```typescript
-import { SimpleMem, OpenAIProvider, OpenAIEmbeddings } from "simplemem";
+import { SimpleMem, OpenAIProvider, OpenAIEmbeddings } from "@sheriax/simplemem";
 
 // Initialize with your provider
 const memory = new SimpleMem({
@@ -109,7 +109,7 @@ new OpenAIProvider({
 ### Storage Options
 
 ```typescript
-import { MemoryStorage, FileStorage } from 'simplemem';
+import { MemoryStorage, FileStorage } from '@sheriax/simplemem';
 
 // In-memory (default, ephemeral)
 const memory = new SimpleMem({ storage: new MemoryStorage(), ... });

@@ -45,9 +45,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aiming-lab/SimpleMem"
+    "url": "https://github.com/youhanasheriff/SimpleMemJs.git"
   },
-  "homepage": "https://github.com/aiming-lab/SimpleMem",
+  "homepage": "https://github.com/youhanasheriff/SimpleMemJs",
   "engines": {
     "node": ">=18.0.0"
   },

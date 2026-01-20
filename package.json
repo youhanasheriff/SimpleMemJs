@@ -1,5 +1,5 @@
 {
-  "name": "@ys/simplemem",
+  "name": "@sheriax/simplemem",
   "version": "0.1.0",
   "description": "Efficient lifelong memory for LLM agents - TypeScript implementation",
   "type": "module",

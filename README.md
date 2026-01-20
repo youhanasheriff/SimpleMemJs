@@ -15,13 +15,13 @@ A TypeScript implementation of the [SimpleMem paper](https://arxiv.org/abs/2601.
 
 ```bash
 # Bun (recommended)
-bun add simplemem
+bun add @ys/simplemem
 
 # npm
-npm install simplemem
+npm install @ys/simplemem
 
 # pnpm
-pnpm add simplemem
+pnpm add @ys/simplemem
 ```
 
 ## Quick Start

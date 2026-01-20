@@ -1,6 +1,6 @@
 {
   "name": "@sheriax/simplemem",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Efficient lifelong memory for LLM agents - TypeScript implementation",
   "type": "module",
   "main": "./dist/index.cjs",

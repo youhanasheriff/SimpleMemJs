@@ -1,0 +1,19 @@
+{
+  "name": "@simplemem/core",
+  "version": "0.1.0",
+  "exports": "./src/index.ts",
+  "tasks": {
+    "test": "deno test --allow-read --allow-write --allow-net",
+    "check": "deno check src/index.ts"
+  },
+  "imports": {
+    "dayjs": "npm:dayjs@^1.11.13",
+    "openai": "npm:openai@^4.77.0",
+    "uuid": "npm:uuid@^11.0.5",
+    "zod": "npm:zod@^3.24.1"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["esnext", "dom"]
+  }
+}

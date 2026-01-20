@@ -1,0 +1,75 @@
+{
+  "name": "simplemem",
+  "version": "0.1.0",
+  "description": "Efficient lifelong memory for LLM agents - TypeScript implementation",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "test": "bun test",
+    "test:node": "node --experimental-vm-modules node_modules/vitest/vitest.mjs run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "llm",
+    "memory",
+    "agents",
+    "rag",
+    "vector-search",
+    "embeddings",
+    "ai",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiming-lab/SimpleMem"
+  },
+  "homepage": "https://github.com/aiming-lab/SimpleMem",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "openai": "^4.77.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/uuid": "^10.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "@xenova/transformers": "^2.17.0"
+  },
+  "peerDependenciesMeta": {
+    "@xenova/transformers": {
+      "optional": true
+    }
+  }
+}

@@ -78,3 +78,5 @@ export {
   formatTimestamp,
   now,
 } from "./utils/temporal.js";
+
+export { matchesFilter } from "./utils/filter.js";

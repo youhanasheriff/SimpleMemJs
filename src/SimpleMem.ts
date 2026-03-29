@@ -16,7 +16,9 @@ import type {
   ExportData,
   SearchOptions,
   RetrievalContext,
+  Logger,
 } from "./types/index.js";
+import { consoleLogger } from "./types/index.js";
 import { MemoryStorage } from "./storage/memory.js";
 import {
   MemoryBuilder,
@@ -70,6 +72,12 @@ export interface SimpleMemOptions {
    * Stage 3 configuration
    */
   retrieval?: Partial<RetrievalConfig>;
+
+  /**
+   * Logger instance (defaults to console logger)
+   * Use `silentLogger` to suppress all output.
+   */
+  logger?: Logger;
 }
 
 // =============================================================================
@@ -92,6 +100,7 @@ export class SimpleMem {
   private index: HybridIndex;
   private retriever: HybridRetriever;
   private generator: AnswerGenerator;
+  private logger: Logger;
   private dialogueCounter = 0;
   private initialized = false;
 
@@ -99,12 +108,14 @@ export class SimpleMem {
     this.llm = options.llm;
     this.embeddings = options.embeddings;
     this.storage = options.storage ?? new MemoryStorage();
+    this.logger = options.logger ?? consoleLogger;
 
     // Initialize Stage 1: Compression
     this.builder = new MemoryBuilder(
       this.llm,
       this.embeddings,
       options.compression ?? DEFAULT_COMPRESSION_CONFIG,
+      this.logger,
     );
 
     // Initialize Stage 2: Indexing
@@ -118,9 +129,10 @@ export class SimpleMem {
       this.llm,
       this.index,
       options.retrieval ?? DEFAULT_RETRIEVAL_CONFIG,
+      this.logger,
     );
 
-    this.generator = new AnswerGenerator(this.llm);
+    this.generator = new AnswerGenerator(this.llm, this.logger);
   }
 
   /**

@@ -16,7 +16,9 @@ import type {
   MemoryUnit,
   LLMProvider,
   EmbeddingProvider,
+  Logger,
 } from "../types/index.js";
+import { consoleLogger } from "../types/index.js";
 import { cosineSimilarity } from "../utils/similarity.js";
 import { now } from "../utils/temporal.js";
 
@@ -96,6 +98,7 @@ export class MemoryBuilder {
   private llm: LLMProvider;
   private embeddings: EmbeddingProvider;
   private config: CompressionConfig;
+  private logger: Logger;
   private dialogueBuffer: Dialogue[] = [];
   private processedDialogueIds: Set<number> = new Set();
   private previousWindowEmbedding: number[] | null = null;
@@ -106,10 +109,12 @@ export class MemoryBuilder {
     llm: LLMProvider,
     embeddings: EmbeddingProvider,
     config: Partial<CompressionConfig> = {},
+    logger: Logger = consoleLogger,
   ) {
     this.llm = llm;
     this.embeddings = embeddings;
     this.config = { ...DEFAULT_COMPRESSION_CONFIG, ...config };
+    this.logger = logger;
   }
 
   /**
@@ -351,7 +356,10 @@ export class MemoryBuilder {
           }) as MemoryUnit,
       ); // Cast to satisfy strict check if needed, but values should align
     } catch (error) {
-      console.error("Failed to extract memory units:", error);
+      this.logger.warn(
+        "Failed to extract memory units from window, returning empty result",
+        error,
+      );
       return [];
     }
   }

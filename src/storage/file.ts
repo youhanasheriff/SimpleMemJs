@@ -14,7 +14,7 @@ import type {
   QueryFilter,
   ExportData,
 } from "../types/index.js";
-import { isWithinRange } from "../utils/temporal.js";
+import { matchesFilter } from "../utils/filter.js";
 
 export interface FileStorageOptions {
   /**
@@ -130,7 +130,7 @@ export class FileStorage implements StorageAdapter {
     const results: MemoryUnit[] = [];
 
     for (const unit of this.units.values()) {
-      if (this.matchesFilter(unit, filter)) {
+      if (matchesFilter(unit, filter)) {
         results.push(unit);
       }
     }
@@ -189,51 +189,5 @@ export class FileStorage implements StorageAdapter {
     this.autoSave = true;
     await this.persist();
     this.autoSave = originalAutoSave;
-  }
-
-  /**
-   * Check if a memory unit matches the filter criteria
-   */
-  private matchesFilter(unit: MemoryUnit, filter: QueryFilter): boolean {
-    if (filter.persons && filter.persons.length > 0) {
-      const hasMatchingPerson = filter.persons.some((person) =>
-        unit.persons.some((p) =>
-          p.toLowerCase().includes(person.toLowerCase()),
-        ),
-      );
-      if (!hasMatchingPerson) return false;
-    }
-
-    if (filter.entities && filter.entities.length > 0) {
-      const hasMatchingEntity = filter.entities.some((entity) =>
-        unit.entities.some((e) =>
-          e.toLowerCase().includes(entity.toLowerCase()),
-        ),
-      );
-      if (!hasMatchingEntity) return false;
-    }
-
-    if (filter.timestampRange && unit.timestamp) {
-      const { start, end } = filter.timestampRange;
-      if (start && end && !isWithinRange(unit.timestamp, start, end)) {
-        return false;
-      }
-    }
-
-    if (filter.location && unit.location) {
-      if (
-        !unit.location.toLowerCase().includes(filter.location.toLowerCase())
-      ) {
-        return false;
-      }
-    }
-
-    if (filter.topic && unit.topic) {
-      if (!unit.topic.toLowerCase().includes(filter.topic.toLowerCase())) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

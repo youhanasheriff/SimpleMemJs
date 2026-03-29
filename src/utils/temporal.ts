@@ -173,7 +173,9 @@ export function parseTimeRange(
   );
   if (monthYearMatch) {
     const [, monthName, year] = monthYearMatch;
-    const monthDate = dayjs(`${monthName} 1, ${year}`, "MMMM D, YYYY");
+    const capitalized =
+      monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    const monthDate = dayjs(`${capitalized} 1, ${year}`, "MMMM D, YYYY");
     return {
       start: monthDate.startOf("month").toISOString(),
       end: monthDate.endOf("month").toISOString(),

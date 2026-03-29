@@ -20,7 +20,7 @@ import {
   BM25Scorer,
   computeHybridScore,
 } from "../utils/similarity.js";
-import { isWithinRange } from "../utils/temporal.js";
+import { matchesFilter } from "../utils/filter.js";
 
 // =============================================================================
 // Configuration
@@ -199,7 +199,7 @@ export class HybridIndex {
     const results: SearchResult[] = [];
 
     for (const unit of this.units.values()) {
-      if (this.matchesFilter(unit, filter)) {
+      if (matchesFilter(unit, filter)) {
         results.push({
           unit,
           score: 1.0, // Binary match
@@ -259,7 +259,7 @@ export class HybridIndex {
       const semanticScore = semanticScores.get(unitId) ?? 0;
       const lexicalScore = lexicalScores.get(unitId) ?? 0;
       const matchesConstraints = filter
-        ? this.matchesFilter(unit, filter)
+        ? matchesFilter(unit, filter)
         : true;
 
       const hybridScore = computeHybridScore(
@@ -305,45 +305,4 @@ export class HybridIndex {
     this.needsRebuild = false;
   }
 
-  /**
-   * Check if a unit matches filter criteria
-   */
-  private matchesFilter(unit: MemoryUnit, filter: QueryFilter): boolean {
-    if (filter.persons && filter.persons.length > 0) {
-      const hasMatch = filter.persons.some((p) =>
-        unit.persons.some((up) => up.toLowerCase().includes(p.toLowerCase())),
-      );
-      if (!hasMatch) return false;
-    }
-
-    if (filter.entities && filter.entities.length > 0) {
-      const hasMatch = filter.entities.some((e) =>
-        unit.entities.some((ue) => ue.toLowerCase().includes(e.toLowerCase())),
-      );
-      if (!hasMatch) return false;
-    }
-
-    if (filter.timestampRange && unit.timestamp) {
-      const { start, end } = filter.timestampRange;
-      if (start && end && !isWithinRange(unit.timestamp, start, end)) {
-        return false;
-      }
-    }
-
-    if (filter.location && unit.location) {
-      if (
-        !unit.location.toLowerCase().includes(filter.location.toLowerCase())
-      ) {
-        return false;
-      }
-    }
-
-    if (filter.topic && unit.topic) {
-      if (!unit.topic.toLowerCase().includes(filter.topic.toLowerCase())) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }

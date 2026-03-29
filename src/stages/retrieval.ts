@@ -17,7 +17,9 @@ import type {
   RetrievalContext,
   QueryFilter,
   QueryAnalysis,
+  Logger,
 } from "../types/index.js";
+import { consoleLogger } from "../types/index.js";
 import { HybridIndex } from "./indexing.js";
 import { computeDynamicK } from "../utils/similarity.js";
 
@@ -95,15 +97,18 @@ export class HybridRetriever {
   private llm: LLMProvider;
   private index: HybridIndex;
   private config: RetrievalConfig;
+  private logger: Logger;
 
   constructor(
     llm: LLMProvider,
     index: HybridIndex,
     config: Partial<RetrievalConfig> = {},
+    logger: Logger = consoleLogger,
   ) {
     this.llm = llm;
     this.index = index;
     this.config = { ...DEFAULT_RETRIEVAL_CONFIG, ...config };
+    this.logger = logger;
   }
 
   /**
@@ -211,7 +216,10 @@ Return ONLY the JSON object.`;
         semanticQuery: response.semantic_query,
       };
     } catch (error) {
-      // Fallback: assume LOW complexity
+      this.logger.warn(
+        "Query analysis failed, falling back to LOW complexity",
+        error,
+      );
       return {
         complexity: "LOW",
         rationale: "Default analysis",
@@ -288,8 +296,9 @@ Is this context sufficient? Reply with ONLY "yes" or "no".`;
     try {
       const response = await this.llm.complete(prompt, { temperature: 0.1 });
       return response.toLowerCase().includes("yes");
-    } catch {
-      return true; // Assume adequate on error
+    } catch (error) {
+      this.logger.warn("Adequacy check failed, assuming adequate", error);
+      return true;
     }
   }
 
@@ -324,8 +333,8 @@ Example: ["meeting time with Alice", "location of the discussion"]`;
       if (Array.isArray(parsed)) {
         return parsed.filter((q: unknown) => typeof q === "string").slice(0, 2);
       }
-    } catch {
-      // Ignore errors
+    } catch (error) {
+      this.logger.warn("Failed to generate additional queries", error);
     }
 
     return [];
@@ -360,9 +369,11 @@ Example: ["meeting time with Alice", "location of the discussion"]`;
  */
 export class AnswerGenerator {
   private llm: LLMProvider;
+  private logger: Logger;
 
-  constructor(llm: LLMProvider) {
+  constructor(llm: LLMProvider, logger: Logger = consoleLogger) {
     this.llm = llm;
+    this.logger = logger;
   }
 
   /**
@@ -385,7 +396,10 @@ export class AnswerGenerator {
       const response = await this.llm.completeJSON(prompt, AnswerSchema);
       return response.answer;
     } catch (error) {
-      // Fallback to simple completion
+      this.logger.warn(
+        "JSON answer generation failed, falling back to plain completion",
+        error,
+      );
       const response = await this.llm.complete(prompt, { temperature: 0.1 });
       return response;
     }

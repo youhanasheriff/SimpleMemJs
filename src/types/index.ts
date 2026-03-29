@@ -193,6 +193,40 @@ export interface SimpleMemConfig {
 }
 
 // =============================================================================
+// Logger Interface
+// =============================================================================
+
+/**
+ * Logger interface for structured error and debug output
+ */
+export interface Logger {
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+}
+
+/**
+ * Default console logger
+ */
+export const consoleLogger: Logger = {
+  debug: (msg, ...args) => console.debug(`[SimpleMem] ${msg}`, ...args),
+  info: (msg, ...args) => console.info(`[SimpleMem] ${msg}`, ...args),
+  warn: (msg, ...args) => console.warn(`[SimpleMem] ${msg}`, ...args),
+  error: (msg, ...args) => console.error(`[SimpleMem] ${msg}`, ...args),
+};
+
+/**
+ * Silent logger (no output)
+ */
+export const silentLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
+
+// =============================================================================
 // Provider Interfaces
 // =============================================================================
 

@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Pre-commit hook: ensures CHANGELOG.md is updated and version is bumped.
+#
+
+# Check if CHANGELOG.md is staged
+if ! git diff --cached --name-only | grep -q "^CHANGELOG.md$"; then
+  echo "ERROR: CHANGELOG.md is not staged."
+  echo "Please update CHANGELOG.md with your changes before committing."
+  exit 1
+fi
+
+# Check if package.json is staged (version bump)
+if ! git diff --cached --name-only | grep -q "^package.json$"; then
+  echo "ERROR: package.json is not staged."
+  echo "Please bump the version in package.json before committing."
+  exit 1
+fi
+
+# Verify the version in package.json actually changed
+if git diff --cached package.json | grep -q '"version"'; then
+  exit 0
+else
+  echo "WARNING: package.json is staged but version was not changed."
+  echo "Please bump the version in package.json before committing."
+  exit 1
+fi

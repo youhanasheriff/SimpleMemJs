@@ -176,6 +176,23 @@ export class MemoryBuilder {
   }
 
   /**
+   * Process raw text directly (bypasses dialogue buffer and windowing).
+   * Used by addText() for non-dialogue input.
+   */
+  async processText(
+    text: string,
+    timestamp?: string,
+  ): Promise<MemoryUnit[]> {
+    const dialogue: Dialogue = {
+      id: -(++this.windowCounter), // negative IDs avoid collision with addDialogue
+      speaker: "system",
+      content: text,
+      timestamp: timestamp ?? now(),
+    };
+    return this.processWindow([dialogue]);
+  }
+
+  /**
    * Extract a window from the buffer (with overlap handling)
    */
   private extractWindow(): Dialogue[] {

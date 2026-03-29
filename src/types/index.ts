@@ -267,6 +267,26 @@ export interface EmbeddingProvider {
 }
 
 // =============================================================================
+// Multimodal Embedding Types
+// =============================================================================
+
+/**
+ * Input for multimodal embedding providers
+ */
+export interface MultimodalInput {
+  type: "text" | "image";
+  content: string; // text content, or base64/URL for images
+}
+
+/**
+ * Multimodal embedding provider interface (extends text-only)
+ */
+export interface MultimodalEmbeddingProvider extends EmbeddingProvider {
+  embedMultimodal(inputs: MultimodalInput[]): Promise<number[][]>;
+  readonly supportsImages: boolean;
+}
+
+// =============================================================================
 // Storage Adapter Interface
 // =============================================================================
 
@@ -365,4 +385,41 @@ export interface SearchOptions {
   limit?: number;
   filter?: QueryFilter;
   includeEmbeddings?: boolean;
+}
+
+// =============================================================================
+// Flexible Input Types
+// =============================================================================
+
+/**
+ * Metadata for addText() calls
+ */
+export interface TextMetadata {
+  source?: string;
+  timestamp?: string;
+  topic?: string;
+  entities?: string[];
+}
+
+/**
+ * Options for addDocument() calls
+ */
+export interface DocumentOptions {
+  chunkSize?: number;
+  chunkOverlap?: number;
+  source?: string;
+  timestamp?: string;
+}
+
+/**
+ * Metadata for addFact() calls (bypasses LLM extraction)
+ */
+export interface FactMetadata {
+  timestamp?: string;
+  location?: string;
+  persons?: string[];
+  entities?: string[];
+  topic?: string;
+  salience?: Salience;
+  keywords?: string[];
 }

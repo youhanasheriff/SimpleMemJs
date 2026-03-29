@@ -14,18 +14,35 @@ export {
   type SimpleMemOptions,
 } from "./SimpleMem.js";
 
+// Events
+export {
+  SimpleMemEventEmitter,
+  type SimpleMemEvents,
+} from "./events.js";
+
 // Type definitions
 export * from "./types/index.js";
 
 // Storage adapters
 export { MemoryStorage } from "./storage/memory.js";
 export { FileStorage, type FileStorageOptions } from "./storage/file.js";
+export { SQLiteStorage, type SQLiteStorageOptions } from "./storage/sqlite.js";
 
 // Embedding providers
 export {
   OpenAIEmbeddings,
   type OpenAIEmbeddingsOptions,
 } from "./embeddings/openai.js";
+
+export {
+  LocalEmbeddings,
+  type LocalEmbeddingsOptions,
+} from "./embeddings/local.js";
+
+export {
+  VoyageEmbeddings,
+  type VoyageEmbeddingsOptions,
+} from "./embeddings/voyage.js";
 
 // LLM providers
 export { OpenAIProvider, type OpenAIProviderOptions } from "./llm/openai.js";
@@ -49,6 +66,12 @@ export {
   type RetrievalConfig,
   DEFAULT_RETRIEVAL_CONFIG,
 } from "./stages/retrieval.js";
+
+export {
+  AbstractionEngine,
+  type AbstractionConfig,
+  DEFAULT_ABSTRACTION_CONFIG,
+} from "./stages/abstraction.js";
 
 // Utilities
 export {
@@ -80,3 +103,5 @@ export {
 } from "./utils/temporal.js";
 
 export { matchesFilter } from "./utils/filter.js";
+
+export { chunkText } from "./utils/chunking.js";

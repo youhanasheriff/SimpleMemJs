@@ -11,5 +11,5 @@ export default defineConfig({
   minify: false,
   target: "es2022",
   outDir: "dist",
-  external: ["@xenova/transformers"],
+  external: ["@xenova/transformers", "better-sqlite3", "bun:sqlite"],
 });

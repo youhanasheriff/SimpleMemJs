@@ -7,9 +7,11 @@
  * 3. Adaptive Query-Aware Retrieval (HybridRetriever)
  */
 
+import { v4 as uuidv4 } from "uuid";
 import type {
   Dialogue,
   MemoryUnit,
+  AbstractMemory,
   LLMProvider,
   EmbeddingProvider,
   StorageAdapter,
@@ -17,6 +19,9 @@ import type {
   SearchOptions,
   RetrievalContext,
   Logger,
+  TextMetadata,
+  DocumentOptions,
+  FactMetadata,
 } from "./types/index.js";
 import { consoleLogger } from "./types/index.js";
 import { MemoryStorage } from "./storage/memory.js";
@@ -36,7 +41,14 @@ import {
   type RetrievalConfig,
   DEFAULT_RETRIEVAL_CONFIG,
 } from "./stages/retrieval.js";
+import {
+  AbstractionEngine,
+  type AbstractionConfig,
+  DEFAULT_ABSTRACTION_CONFIG,
+} from "./stages/abstraction.js";
 import { now } from "./utils/temporal.js";
+import { chunkText } from "./utils/chunking.js";
+import { SimpleMemEventEmitter } from "./events.js";
 
 // =============================================================================
 // Configuration
@@ -74,6 +86,11 @@ export interface SimpleMemOptions {
   retrieval?: Partial<RetrievalConfig>;
 
   /**
+   * Abstract memory consolidation configuration
+   */
+  abstraction?: Partial<AbstractionConfig>;
+
+  /**
    * Logger instance (defaults to console logger)
    * Use `silentLogger` to suppress all output.
    */
@@ -100,15 +117,23 @@ export class SimpleMem {
   private index: HybridIndex;
   private retriever: HybridRetriever;
   private generator: AnswerGenerator;
+  private abstractionEngine: AbstractionEngine;
   private logger: Logger;
   private dialogueCounter = 0;
   private initialized = false;
+
+  /**
+   * Event emitter for lifecycle hooks.
+   * Subscribe to events like 'memory:units_created', 'retrieval:answer_generated', etc.
+   */
+  public readonly events: SimpleMemEventEmitter;
 
   constructor(options: SimpleMemOptions) {
     this.llm = options.llm;
     this.embeddings = options.embeddings;
     this.storage = options.storage ?? new MemoryStorage();
     this.logger = options.logger ?? consoleLogger;
+    this.events = new SimpleMemEventEmitter();
 
     // Initialize Stage 1: Compression
     this.builder = new MemoryBuilder(
@@ -130,9 +155,19 @@ export class SimpleMem {
       this.index,
       options.retrieval ?? DEFAULT_RETRIEVAL_CONFIG,
       this.logger,
+      this.storage,
     );
 
     this.generator = new AnswerGenerator(this.llm, this.logger);
+
+    // Initialize Abstract Memory Consolidation
+    this.abstractionEngine = new AbstractionEngine(
+      this.llm,
+      this.embeddings,
+      this.storage,
+      options.abstraction ?? DEFAULT_ABSTRACTION_CONFIG,
+      this.logger,
+    );
   }
 
   /**
@@ -229,9 +264,19 @@ export class SimpleMem {
 
     // Stage 3: Adaptive retrieval
     const context = await this.retriever.retrieve(question);
+    this.events.emit("retrieval:context_retrieved", {
+      query: question,
+      unitCount: context.units.length,
+      abstractCount: context.abstracts.length,
+    });
 
     // Generate answer
-    return this.generator.generate(question, context);
+    const answer = await this.generator.generate(question, context);
+    this.events.emit("retrieval:answer_generated", {
+      query: question,
+      answer,
+    });
+    return answer;
   }
 
   /**
@@ -265,6 +310,87 @@ export class SimpleMem {
   async getContext(query: string): Promise<RetrievalContext> {
     await this.initialize();
     return this.retriever.retrieve(query);
+  }
+
+  /**
+   * Add raw text content (bypasses dialogue windowing).
+   * Extracts memory units via LLM from the text directly.
+   *
+   * @param text Text content to process
+   * @param metadata Optional metadata (source, timestamp, topic)
+   * @returns Created memory units
+   */
+  async addText(
+    text: string,
+    metadata?: TextMetadata,
+  ): Promise<MemoryUnit[]> {
+    const units = await this.builder.processText(
+      text,
+      metadata?.timestamp ?? now(),
+    );
+    await this.saveAndIndexUnits(units);
+    return units;
+  }
+
+  /**
+   * Add a long document by chunking and extracting memories from each chunk.
+   *
+   * @param content Document text content
+   * @param options Chunking and metadata options
+   * @returns All created memory units across chunks
+   */
+  async addDocument(
+    content: string,
+    options?: DocumentOptions,
+  ): Promise<MemoryUnit[]> {
+    const chunks = chunkText(
+      content,
+      options?.chunkSize ?? 2000,
+      options?.chunkOverlap ?? 200,
+    );
+
+    const allUnits: MemoryUnit[] = [];
+    for (const chunk of chunks) {
+      const units = await this.addText(chunk, {
+        source: options?.source,
+        timestamp: options?.timestamp,
+      });
+      allUnits.push(...units);
+    }
+    return allUnits;
+  }
+
+  /**
+   * Add a direct fact without LLM extraction.
+   * Creates a memory unit directly from the provided content and metadata.
+   *
+   * @param content The fact to store (e.g., "User prefers dark mode")
+   * @param metadata Optional metadata (persons, entities, topic, etc.)
+   * @returns The created memory unit
+   */
+  async addFact(
+    content: string,
+    metadata?: FactMetadata,
+  ): Promise<MemoryUnit> {
+    const [embedding] = await this.embeddings.embed([content]);
+
+    const unit: MemoryUnit = {
+      id: uuidv4(),
+      content,
+      keywords: metadata?.keywords ?? content.toLowerCase().split(/\s+/).filter((w) => w.length > 2),
+      timestamp: metadata?.timestamp ?? now(),
+      location: metadata?.location,
+      persons: metadata?.persons ?? [],
+      entities: metadata?.entities ?? [],
+      topic: metadata?.topic,
+      salience: metadata?.salience ?? "medium",
+      embedding,
+      sourceDialogueIds: [],
+      createdAt: now(),
+    };
+
+    await this.saveAndIndexUnits([unit]);
+    return unit;
   }
 
   /**
@@ -316,14 +442,25 @@ export class SimpleMem {
   }
 
   /**
+   * Manually trigger abstract memory consolidation.
+   * Clusters similar memory units and generates abstract patterns.
+   */
+  async consolidate(): Promise<AbstractMemory[]> {
+    await this.initialize();
+    return this.abstractionEngine.consolidate();
+  }
+
+  /**
    * Clear all memories
    */
   async clear(): Promise<void> {
     await this.storage.clear();
     this.index.clear();
     this.builder.reset();
+    this.abstractionEngine.reset();
     this.dialogueCounter = 0;
     this.initialized = false;
+    this.events.emit("storage:cleared", {});
   }
 
   /**
@@ -334,6 +471,23 @@ export class SimpleMem {
 
     await this.storage.saveUnits(units);
     await this.index.addUnits(units);
+
+    this.events.emit("memory:units_created", { units, count: units.length });
+    this.events.emit("memory:units_indexed", {
+      unitIds: units.map((u) => u.id),
+      count: units.length,
+    });
+
+    // Trigger abstract memory consolidation if interval reached
+    const abstracts = await this.abstractionEngine.maybeConsolidate(
+      units.length,
+    );
+    for (const abstract of abstracts) {
+      this.events.emit("memory:abstract_created", {
+        abstract,
+        sourceCount: abstract.sourceUnitIds.length,
+      });
+    }
   }
 }
 

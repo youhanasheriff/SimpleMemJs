@@ -14,6 +14,7 @@ import { z } from "zod";
 import type {
   MemoryUnit,
   LLMProvider,
+  StorageAdapter,
   RetrievalContext,
   QueryFilter,
   QueryAnalysis,
@@ -96,6 +97,7 @@ const QueryAnalysisResponseSchema = z.object({
 export class HybridRetriever {
   private llm: LLMProvider;
   private index: HybridIndex;
+  private storage: StorageAdapter | null;
   private config: RetrievalConfig;
   private logger: Logger;
 
@@ -104,9 +106,11 @@ export class HybridRetriever {
     index: HybridIndex,
     config: Partial<RetrievalConfig> = {},
     logger: Logger = consoleLogger,
+    storage: StorageAdapter | null = null,
   ) {
     this.llm = llm;
     this.index = index;
+    this.storage = storage;
     this.config = { ...DEFAULT_RETRIEVAL_CONFIG, ...config };
     this.logger = logger;
   }
@@ -156,11 +160,16 @@ export class HybridRetriever {
       allUnits = await this.reflectionSearch(query, allUnits);
     }
 
-    // Step 5: Build retrieval context
+    // Step 5: Fetch abstract memories if storage is available
+    const abstracts = this.storage
+      ? await this.storage.getAllAbstracts()
+      : [];
+
+    // Step 6: Build retrieval context
     const totalTokens = this.estimateTokens(allUnits);
 
     return {
-      abstracts: [], // TODO: Add abstract memories
+      abstracts,
       units: allUnits,
       totalTokens,
       retrievalRationale: analysis?.rationale,
@@ -410,6 +419,19 @@ export class AnswerGenerator {
    */
   private formatContext(context: RetrievalContext): string {
     const parts: string[] = [];
+
+    // Include abstract memories (high-level patterns) first
+    for (let i = 0; i < context.abstracts.length; i++) {
+      const abstract = context.abstracts[i];
+      const lines = [
+        `[Pattern ${i + 1}]`,
+        `Pattern: ${abstract.pattern}`,
+        `Frequency: ${abstract.frequency} occurrences`,
+      ];
+      if (abstract.entities.length > 0)
+        lines.push(`Entities: ${abstract.entities.join(", ")}`);
+      parts.push(lines.join("\n"));
+    }
 
     for (let i = 0; i < context.units.length; i++) {
       const unit = context.units[i];
